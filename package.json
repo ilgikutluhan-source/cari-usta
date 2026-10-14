@@ -1,0 +1,34 @@
+{
+  "name": "cariyonet",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "packageManager": "pnpm@11.25.0",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 3000",
+    "build": "tsc -b && tsc -p tsconfig.functions.json && vite build",
+    "test:money": "node scripts/test-money-format.mjs",
+    "test:inventory": "node scripts/test-inventory-validation.mjs",
+    "test:cash-sales-validation": "node scripts/test-cash-sales-validation.mjs",
+    "test:firestore-rules": "node scripts/test-firestore-rules.mjs",
+    "test:stock-sale-function": "node scripts/test-stock-sale-function.mjs",
+    "preview": "vite preview --host 0.0.0.0"
+  },
+  "dependencies": {
+    "@netlify/functions": "^6.0.2",
+    "firebase": "^11.10.0",
+    "firebase-admin": "^14.5.0",
+    "html2pdf.js": "^0.10.3",
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.1",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "~5.7.2",
+    "vite": "^6.0.7"
+  }
+}

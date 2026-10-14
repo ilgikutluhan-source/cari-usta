@@ -1,0 +1,28 @@
+[build]
+  command = "pnpm install --frozen-lockfile && pnpm build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+  VITE_FIREBASE_API_KEY = "AIzaSyCPPNTToJlhZvzndn9nlMH5boc8lMFipJ4"
+  VITE_FIREBASE_AUTH_DOMAIN = "cari-usta-web.firebaseapp.com"
+  VITE_FIREBASE_PROJECT_ID = "cari-usta-web"
+  VITE_FIREBASE_APP_ID = "1:923411257476:web:4e66b63beea0752b448ad1"
+  VITE_CARI_OWNER_UID = "1HQizAgA9AOt7q12oD10715mNQR2"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+  external_node_modules = ["firebase-admin"]

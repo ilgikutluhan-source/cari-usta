@@ -1,0 +1,506 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isMember(ownerUid) {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/users/$(ownerUid)/members/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(ownerUid)/members/$(request.auth.uid)).data.get('uid', '') == request.auth.uid
+        && get(/databases/$(database)/documents/users/$(ownerUid)/members/$(request.auth.uid)).data.get('active', false) == true
+        && (get(/databases/$(database)/documents/users/$(ownerUid)/members/$(request.auth.uid)).data.get('role', '') == 'owner'
+          || get(/databases/$(database)/documents/users/$(ownerUid)/members/$(request.auth.uid)).data.get('role', '') == 'staff');
+    }
+
+    function isOwner(ownerUid) {
+      return request.auth != null
+        && request.auth.uid == ownerUid
+        && isMember(ownerUid)
+        && get(/databases/$(database)/documents/users/$(ownerUid)/members/$(ownerUid)).data.get('role', '') == 'owner';
+    }
+
+    function ledgerWritesEnabled(ownerUid) {
+      return !exists(/databases/$(database)/documents/users/$(ownerUid)/system/ledgerReset);
+    }
+
+    function validMember(data, ownerUid, memberUid, role) {
+      return data.keys().hasAll([
+          'uid', 'email', 'displayName', 'role', 'active', 'createdBy', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'uid', 'email', 'displayName', 'role', 'active', 'createdBy', 'createdAt'
+        ])
+        && data.uid == memberUid
+        && data.email is string
+        && data.email.size() <= 254
+        && data.displayName is string
+        && data.displayName.size() > 0
+        && data.displayName.size() <= 80
+        && data.role == role
+        && data.active == true
+        && data.createdBy == ownerUid
+        && data.createdAt is timestamp;
+    }
+
+    function validCustomer(data) {
+      return data.keys().hasAll([
+          'name', 'phone', 'company', 'note', 'currentDueDate',
+          'totalDebt', 'totalPaid', 'balance', 'lastTransactionId',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'name', 'phone', 'company', 'note', 'currentDueDate',
+          'totalDebt', 'totalPaid', 'balance', 'lastTransactionId',
+          'createdAt', 'updatedAt', 'archivedAt'
+        ])
+        && data.name is string
+        && data.name.size() > 0
+        && data.name.size() <= 120
+        && data.phone is string
+        && data.phone.size() <= 24
+        && data.company is string
+        && data.company.size() <= 120
+        && data.note is string
+        && data.note.size() <= 500
+        && data.currentDueDate is string
+        && data.totalDebt is number
+        && data.totalDebt >= 0
+        && data.totalDebt <= 10000000000
+        && data.totalPaid is number
+        && data.totalPaid >= 0
+        && data.totalPaid <= 10000000000
+        && data.balance is number
+        && data.balance >= 0
+        && data.balance <= 10000000000
+        && data.lastTransactionId is string
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp
+        && data.get('archivedAt', '') is string
+        && data.get('archivedAt', '').size() <= 30;
+    }
+
+    function validMovement(data, customerId) {
+      return data.keys().hasAll([
+          'type', 'amount', 'amountCents', 'date', 'note', 'customerId', 'customerName', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'type', 'amount', 'amountCents', 'date', 'note', 'customerId', 'customerName',
+          'previousDueDate', 'nextDueDate', 'vatRateBps', 'vatBaseCents', 'vatCents', 'createdAt'
+        ])
+        && data.customerId == customerId
+        && data.customerName is string
+        && data.customerName.size() > 0
+        && data.date is string
+        && data.date.size() == 10
+        && data.note is string
+        && data.note.size() <= 180
+        && data.amount is number
+        && data.amount >= 0
+        && data.amountCents is int
+        && data.amountCents >= 0
+        && data.amountCents <= 1000000000000
+        && moneyClose(data.amount * 100, data.amountCents)
+        && data.createdAt is timestamp
+        && (!data.keys().hasAny(['vatRateBps', 'vatBaseCents', 'vatCents'])
+          || (data.keys().hasAll(['vatRateBps', 'vatBaseCents', 'vatCents'])
+            && data.type == 'debt'
+            && data.vatRateBps is int
+            && data.vatRateBps == 2000
+            && data.vatBaseCents is int
+            && data.vatBaseCents >= 0
+            && data.vatCents is int
+            && data.vatCents >= 0
+            && data.vatBaseCents + data.vatCents == data.amountCents))
+        && (
+          (data.type == 'debt'
+            && data.amount > 0
+            && data.get('nextDueDate', '') is string
+            && !data.keys().hasAny(['previousDueDate']))
+          || (data.type == 'payment'
+            && data.amount > 0
+            && !data.keys().hasAny(['previousDueDate', 'nextDueDate']))
+          || (data.type == 'due_update'
+            && data.amount == 0
+            && data.previousDueDate is string
+            && data.nextDueDate is string
+            && data.nextDueDate.size() > 0)
+        );
+    }
+
+    function matchesMovement(left, right) {
+      return left == right;
+    }
+
+    function moneyClose(left, right) {
+      return left >= right - 0.00001
+        && left <= right + 0.00001;
+    }
+
+    function movementTransitionIsValid(uid, customerId) {
+      let afterData = request.resource.data;
+      let beforeData = resource.data;
+      let movementId = afterData.lastTransactionId;
+      let movement = getAfter(
+        /databases/$(database)/documents/users/$(uid)/customers/$(customerId)/transactions/$(movementId)
+      ).data;
+      let nextDueDate = movement.get('nextDueDate', '');
+      return movementId is string
+        && movementId.size() > 0
+        && movementId != beforeData.get('lastTransactionId', '')
+        && beforeData.get('archivedAt', '') == ''
+        && !exists(
+          /databases/$(database)/documents/users/$(uid)/customers/$(customerId)/transactions/$(movementId)
+        )
+        && !exists(
+          /databases/$(database)/documents/users/$(uid)/activity/$(movementId)
+        )
+        && movement.customerName == afterData.name
+        && afterData.updatedAt is timestamp
+        && moneyClose(afterData.totalDebt - afterData.totalPaid, afterData.balance)
+        && (
+          (movement.type == 'debt'
+            && moneyClose(afterData.totalDebt, beforeData.totalDebt + movement.amount)
+            && afterData.totalPaid == beforeData.totalPaid
+            && moneyClose(afterData.balance, beforeData.balance + movement.amount)
+            && ((nextDueDate == '' && afterData.currentDueDate == beforeData.currentDueDate)
+              || (nextDueDate != '' && afterData.currentDueDate == nextDueDate)))
+          || (movement.type == 'payment'
+            && afterData.totalDebt == beforeData.totalDebt
+            && moneyClose(afterData.totalPaid, beforeData.totalPaid + movement.amount)
+            && moneyClose(afterData.balance, beforeData.balance - movement.amount)
+            && ((afterData.balance == 0 && afterData.currentDueDate == '')
+              || (afterData.balance > 0 && afterData.currentDueDate == beforeData.currentDueDate)))
+          || (movement.type == 'due_update'
+            && movement.previousDueDate == beforeData.currentDueDate
+            && afterData.totalDebt == beforeData.totalDebt
+            && afterData.totalPaid == beforeData.totalPaid
+            && afterData.balance == beforeData.balance
+            && afterData.currentDueDate == movement.nextDueDate)
+        );
+    }
+
+    function archiveTransitionIsValid() {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return changed.hasOnly(['archivedAt', 'updatedAt'])
+        && changed.hasAny(['archivedAt'])
+        && request.resource.data.get('archivedAt', '') is string
+        && request.resource.data.get('archivedAt', '').size() <= 30
+        && request.resource.data.updatedAt is timestamp;
+    }
+
+    function profileUpdateIsValid() {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return changed.hasOnly(['name', 'phone', 'updatedAt'])
+        && changed.hasAny(['name', 'phone'])
+        && changed.hasAll(['updatedAt'])
+        && request.resource.data.updatedAt is timestamp;
+    }
+
+    function customerAfter(uid, customerId) {
+      return getAfter(
+        /databases/$(database)/documents/users/$(uid)/customers/$(customerId)
+      ).data;
+    }
+
+    function validInventoryProduct(data) {
+      return data.keys().hasAll([
+          'name', 'sku', 'unit', 'salePriceCents', 'stockQuantityMilli',
+          'lowStockThresholdMilli', 'active', 'lastStockMovementId', 'createdBy', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'name', 'sku', 'unit', 'salePriceCents', 'stockQuantityMilli',
+          'lowStockThresholdMilli', 'active', 'lastStockMovementId', 'createdBy', 'createdAt', 'updatedAt'
+        ])
+        && data.name is string
+        && data.name.size() > 0
+        && data.name.size() <= 120
+        && data.sku is string
+        && data.sku.size() <= 60
+        && data.unit is string
+        && data.unit.size() > 0
+        && data.unit.size() <= 24
+        && data.salePriceCents is int
+        && data.salePriceCents > 0
+        && data.salePriceCents <= 1000000000000
+        && data.stockQuantityMilli is int
+        && data.stockQuantityMilli >= 0
+        && data.stockQuantityMilli <= 1000000000
+        && data.lowStockThresholdMilli is int
+        && data.lowStockThresholdMilli >= 0
+        && data.lowStockThresholdMilli <= 1000000000
+        && data.active is bool
+        && data.lastStockMovementId is string
+        && data.lastStockMovementId.size() <= 200
+        && data.createdBy is string
+        && data.createdBy.size() > 0
+        && data.createdBy.size() <= 128
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function validStockActivity(data) {
+      let productId = data.get('productId', '');
+      let delta = data.get('productDeltas', {}).get(productId, 0);
+      let previous = data.get('previousQuantities', {}).get(productId, -1);
+      let next = data.get('nextQuantities', {}).get(productId, -1);
+      return data.keys().hasAll([
+          'type', 'productId', 'productDeltas', 'previousQuantities', 'nextQuantities',
+          'productNames', 'date', 'note', 'createdBy', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'type', 'productId', 'productDeltas', 'previousQuantities', 'nextQuantities',
+          'productNames', 'date', 'note', 'createdBy', 'createdAt',
+          'customerId', 'customerName', 'saleTransactionId'
+        ])
+        && data.type in ['opening', 'receipt', 'adjustment', 'sale']
+        && productId is string
+        && productId.size() > 0
+        && productId.size() <= 128
+        && data.productDeltas is map
+        && data.productDeltas.keys().hasOnly([productId])
+        && data.productDeltas.keys().hasAll([productId])
+        && data.previousQuantities is map
+        && data.previousQuantities.keys().hasOnly([productId])
+        && data.previousQuantities.keys().hasAll([productId])
+        && data.nextQuantities is map
+        && data.nextQuantities.keys().hasOnly([productId])
+        && data.nextQuantities.keys().hasAll([productId])
+        && data.productNames is map
+        && data.productNames.keys().hasOnly([productId])
+        && data.productNames.keys().hasAll([productId])
+        && delta is int
+        && delta != 0
+        && previous is int
+        && previous >= 0
+        && previous <= 1000000000
+        && next is int
+        && next >= 0
+        && next <= 1000000000
+        && next == previous + delta
+        && data.productNames.get(productId, '') is string
+        && data.productNames.get(productId, '').size() > 0
+        && data.date is string
+        && data.date.size() == 10
+        && data.note is string
+        && data.note.size() <= 180
+        && data.createdBy is string
+        && data.createdBy == request.auth.uid
+        && data.createdAt is timestamp
+        && (
+          (data.type == 'opening' && previous == 0 && delta > 0
+            && !data.keys().hasAny(['customerId', 'customerName', 'saleTransactionId']))
+          || (data.type == 'receipt' && delta > 0
+            && !data.keys().hasAny(['customerId', 'customerName', 'saleTransactionId']))
+          || (data.type == 'adjustment'
+            && !data.keys().hasAny(['customerId', 'customerName', 'saleTransactionId']))
+          || (data.type == 'sale' && delta < 0
+            && data.get('customerId', '') is string
+            && data.get('customerId', '').size() > 0
+            && data.get('customerName', '') is string
+            && data.get('customerName', '').size() > 0
+            && data.get('saleTransactionId', '') is string
+            && data.get('saleTransactionId', '').size() > 0)
+        );
+    }
+
+    function openingStockLinkIsValid(uid, productId, product) {
+      let movementId = product.get('lastStockMovementId', '');
+      let movement = getAfter(
+        /databases/$(database)/documents/users/$(uid)/stockActivity/$(movementId)
+      ).data;
+      return product.stockQuantityMilli > 0
+        && movementId is string
+        && movementId.size() > 0
+        && movement.type == 'opening'
+        && movement.productId == productId
+        && movement.type == 'opening'
+        && movement.createdBy == product.createdBy
+        && movement.productNames.get(productId, '') == product.name
+        && movement.previousQuantities.get(productId, -1) == 0
+        && movement.nextQuantities.get(productId, -1) == product.stockQuantityMilli;
+    }
+
+    function inventoryStockTransitionIsValid(uid, productId) {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      let movementId = request.resource.data.get('lastStockMovementId', '');
+      let movement = getAfter(
+        /databases/$(database)/documents/users/$(uid)/stockActivity/$(movementId)
+      ).data;
+      let delta = movement.get('productDeltas', {}).get(productId, 0);
+      let previous = movement.get('previousQuantities', {}).get(productId, -1);
+      let next = movement.get('nextQuantities', {}).get(productId, -1);
+      return changed.hasOnly(['stockQuantityMilli', 'lastStockMovementId', 'updatedAt'])
+        && changed.hasAll(['stockQuantityMilli', 'lastStockMovementId', 'updatedAt'])
+        && resource.data.active == true
+        && request.resource.data.active == true
+        && request.resource.data.stockQuantityMilli is int
+        && request.resource.data.stockQuantityMilli >= 0
+        && request.resource.data.stockQuantityMilli <= 1000000000
+        && request.resource.data.lastStockMovementId is string
+        && request.resource.data.lastStockMovementId.size() <= 200
+        && movementId is string
+        && movementId.size() > 0
+        && movementId != resource.data.lastStockMovementId
+        && !exists(
+          /databases/$(database)/documents/users/$(uid)/stockActivity/$(movementId)
+        )
+        && movement.productId == productId
+        && movement.type in ['receipt', 'adjustment']
+        && movement.createdBy == request.auth.uid
+        && movement.productDeltas is map
+        && movement.previousQuantities is map
+        && movement.nextQuantities is map
+        && movement.productNames is map
+        && movement.productNames.get(productId, '') == resource.data.name
+        && previous == resource.data.stockQuantityMilli
+        && next == request.resource.data.stockQuantityMilli
+        && delta == next - previous
+        && request.resource.data.updatedAt is timestamp
+        && (
+          (movement.type == 'receipt' && delta > 0)
+          || (movement.type == 'adjustment')
+        );
+    }
+
+    function inventoryProfileUpdateIsValid() {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return changed.hasOnly(['name', 'sku', 'unit', 'salePriceCents', 'lowStockThresholdMilli', 'updatedAt'])
+        && changed.hasAny(['name', 'sku', 'unit', 'salePriceCents', 'lowStockThresholdMilli'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.sku is string
+        && request.resource.data.sku.size() <= 60
+        && request.resource.data.unit is string
+        && request.resource.data.unit.size() > 0
+        && request.resource.data.unit.size() <= 24
+        && request.resource.data.salePriceCents is int
+        && request.resource.data.salePriceCents > 0
+        && request.resource.data.salePriceCents <= 1000000000000
+        && request.resource.data.lowStockThresholdMilli is int
+        && request.resource.data.lowStockThresholdMilli >= 0
+        && request.resource.data.lowStockThresholdMilli <= 1000000000
+        && request.resource.data.updatedAt is timestamp
+        && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.stockQuantityMilli == resource.data.stockQuantityMilli
+        && request.resource.data.active == resource.data.active
+        && request.resource.data.lastStockMovementId == resource.data.lastStockMovementId;
+    }
+
+    function inventoryActiveUpdateIsValid() {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return changed.hasOnly(['active', 'updatedAt'])
+        && changed.hasAny(['active'])
+        && request.resource.data.active is bool
+        && request.resource.data.updatedAt is timestamp;
+    }
+
+    function stockActivityCreateIsValid(uid, movementId) {
+      let data = request.resource.data;
+      let productId = data.get('productId', '');
+      let product = getAfter(
+        /databases/$(database)/documents/users/$(uid)/inventory/$(productId)
+      ).data;
+      return validStockActivity(data)
+        && data.createdBy == request.auth.uid
+        && product.lastStockMovementId == movementId
+        && product.stockQuantityMilli == data.nextQuantities.get(productId, -1)
+        && product.name == data.productNames.get(productId, '')
+        && (
+          (data.type == 'opening'
+            && product.createdBy == data.createdBy
+            && product.stockQuantityMilli == data.productDeltas.get(productId, 0))
+          || (data.type in ['receipt', 'adjustment'] && product.active == true)
+        );
+    }
+
+    match /users/{uid}/members/{memberUid} {
+      allow read: if request.auth != null
+        && (request.auth.uid == memberUid || isOwner(uid));
+      allow create: if (request.auth != null
+          && request.auth.uid == uid
+          && memberUid == uid
+          && validMember(request.resource.data, uid, memberUid, 'owner'));
+      allow update, delete: if false;
+    }
+
+    match /users/{uid}/customers/{customerId} {
+      allow read: if isMember(uid);
+      allow create: if isMember(uid)
+        && ledgerWritesEnabled(uid)
+        && validCustomer(request.resource.data)
+        && request.resource.data.totalDebt == 0
+        && request.resource.data.totalPaid == 0
+        && request.resource.data.balance == 0
+        && request.resource.data.lastTransactionId == '';
+      allow update: if isMember(uid)
+        && ledgerWritesEnabled(uid)
+        && validCustomer(request.resource.data)
+        && (archiveTransitionIsValid()
+          || profileUpdateIsValid()
+          || (resource.data.get('archivedAt', '') == ''
+            && request.resource.data.lastTransactionId != resource.data.lastTransactionId
+            && movementTransitionIsValid(uid, customerId)));
+      allow delete: if false;
+
+      match /transactions/{transactionId} {
+        allow read: if isMember(uid);
+        allow create: if isMember(uid)
+          && ledgerWritesEnabled(uid)
+          && validMovement(request.resource.data, customerId)
+          && customerAfter(uid, customerId).lastTransactionId == transactionId;
+        allow update, delete: if false;
+      }
+    }
+
+    match /users/{uid}/activity/{activityId} {
+      allow read: if isMember(uid);
+      allow create: if isMember(uid)
+        && ledgerWritesEnabled(uid)
+        && request.resource.data.customerId is string
+        && validMovement(request.resource.data, request.resource.data.customerId)
+        && customerAfter(uid, request.resource.data.customerId).lastTransactionId == activityId
+        && matchesMovement(
+          request.resource.data,
+          getAfter(
+            /databases/$(database)/documents/users/$(uid)/customers/$(request.resource.data.customerId)/transactions/$(activityId)
+          ).data
+        );
+      allow update, delete: if false;
+    }
+
+    match /users/{uid}/inventory/{productId} {
+      allow read: if isMember(uid);
+      allow create: if isMember(uid)
+        && ledgerWritesEnabled(uid)
+        && validInventoryProduct(request.resource.data)
+        && request.resource.data.active == true
+        && request.resource.data.createdBy == request.auth.uid
+        && ((request.resource.data.stockQuantityMilli == 0
+              && request.resource.data.lastStockMovementId == '')
+          || openingStockLinkIsValid(uid, productId, request.resource.data));
+      allow update: if isMember(uid)
+        && ledgerWritesEnabled(uid)
+        && (inventoryProfileUpdateIsValid()
+          || inventoryActiveUpdateIsValid()
+          || inventoryStockTransitionIsValid(uid, productId));
+      allow delete: if false;
+    }
+
+    match /users/{uid}/stockActivity/{movementId} {
+      allow read: if isMember(uid);
+      allow create: if isMember(uid)
+        && ledgerWritesEnabled(uid)
+        && stockActivityCreateIsValid(uid, movementId);
+      allow update, delete: if false;
+    }
+
+    match /users/{uid}/cashSales/{saleId} {
+      allow read: if isMember(uid);
+      allow create, update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

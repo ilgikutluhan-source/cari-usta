@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#141414" />
+    <meta name="description" content="Çalışkanlar Yapı Market için paylaşımlı müşteri cari hesapları, tahsilatlar ve vadeler." />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Çalışkanlar Yapı Market — Cari Hesap Yönetimi</title>
+    <script>
+      try {
+        const savedTheme = localStorage.getItem('cari-usta-theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.dataset.theme = savedTheme === 'dark' || (savedTheme !== 'light' && prefersDark) ? 'dark' : 'light';
+      } catch {
+        document.documentElement.dataset.theme = 'light';
+      }
+    </script>
+    <script type="module" crossorigin src="/assets/index-D7pMhTXL.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/firebase-shared-3DJ-lhp3.js">
+    <link rel="modulepreload" crossorigin href="/assets/firebase-app-EUm2Xx_y.js">
+    <link rel="modulepreload" crossorigin href="/assets/firebase-auth-BvanAint.js">
+    <link rel="modulepreload" crossorigin href="/assets/firebase-firestore-CWkaDOaO.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-pX8wLu2L.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

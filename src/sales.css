@@ -1,0 +1,154 @@
+/* Ürün satırları: cari borç akışına entegre satış formu */
+.sale-products-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #e4e4e4;
+  border-radius: 10px;
+  background: #fbfbfb;
+}
+
+.sale-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sale-section-heading > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sale-section-heading strong {
+  color: #171717;
+  font-size: 11px;
+}
+
+.sale-section-heading strong span {
+  color: #777;
+  font-weight: 500;
+}
+
+.sale-section-heading small {
+  color: #747474;
+  font-size: 9px;
+}
+
+.sale-item-count {
+  flex: none;
+  border-radius: 999px;
+  padding: 4px 7px;
+  background: #f1f1f1;
+  color: #555;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.sale-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.sale-row {
+  padding: 10px;
+  border: 1px solid #e7e7e7;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.sale-row-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  color: #333;
+  font-size: 10px;
+}
+
+.sale-remove-row {
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  border: 1px solid #f0d0d0;
+  border-radius: 6px;
+  background: #fff;
+  color: #c52222;
+  cursor: pointer;
+}
+
+.sale-name-field {
+  margin-bottom: 8px;
+}
+
+.sale-row-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  align-items: end;
+}
+
+.sale-row-grid .field {
+  min-width: 0;
+}
+
+.sale-row-grid .field small {
+  color: #848484;
+  font-size: 8px;
+}
+
+.sale-line-total {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 7px;
+  border-top: 1px solid #eee;
+  color: #696969;
+  font-size: 9px;
+}
+
+.sale-line-total strong {
+  color: #161616;
+  font-size: 11px;
+}
+
+.sale-add-row {
+  align-self: flex-start;
+  min-height: 32px;
+}
+
+.sale-total-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #252525;
+  border-left: 3px solid #d62828;
+  border-radius: 8px;
+  background: #181818;
+  color: #fff;
+  font-size: 10px;
+}
+
+.sale-total-card strong {
+  font: 700 14px 'Manrope', sans-serif;
+}
+
+@media (max-width: 520px) {
+  .sale-products-editor {
+    padding: 10px;
+  }
+
+  .sale-row-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+
+.inventory-sale-fast-add{padding:9px 10px;border:1px dashed #e1d3d4;border-radius:8px;background:#fffafa}.inventory-sale-fast-add>span{color:#9f2027;font-size:9px;font-weight:750}.inventory-sale-fast-add select{min-height:34px}.inventory-sale-fast-add small{color:#858585;font-size:8px;line-height:1.4}[data-theme="dark"] .sale-products-editor{border-color:#383c42;background:#1c1f23}[data-theme="dark"] .sale-section-heading strong{color:#eceef0}[data-theme="dark"] .sale-section-heading strong span,[data-theme="dark"] .sale-section-heading small,[data-theme="dark"] .sale-row-grid .field small{color:#a1a8af}[data-theme="dark"] .sale-item-count{background:#30343a;color:#d0d4d8}[data-theme="dark"] .sale-row{border-color:#393d43;background:#202328}[data-theme="dark"] .sale-row-title{color:#e2e4e6}[data-theme="dark"] .sale-remove-row{border-color:#5a3639;background:#2a2022;color:#ff969b}[data-theme="dark"] .sale-line-total{border-color:#393d43;color:#a1a8af}[data-theme="dark"] .sale-line-total strong{color:#f1f2f3}[data-theme="dark"] .inventory-sale-fast-add{border-color:#55383c;background:#241e20}[data-theme="dark"] .inventory-sale-fast-add>span{color:#f19ba0}[data-theme="dark"] .inventory-sale-fast-add small{color:#a8afb6}[data-theme="dark"] .inventory-sale-fast-add select{border-color:#3d4249;background:#191c20;color:#eceef0}

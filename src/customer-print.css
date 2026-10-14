@@ -1,0 +1,195 @@
+.customer-print-sheet { display: none; }
+
+@media print {
+  :root { color-scheme: light !important; }
+  @page { size: A4 portrait; margin: 12mm; }
+  @page customer-receipt { size: 80mm 80mm; margin: 2mm; }
+
+  html,
+  body {
+    width: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+    color: #151515 !important;
+  }
+
+  body > *:not(.customer-print-sheet) { display: none !important; }
+
+  .customer-print-sheet {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 0 !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    color: #171717 !important;
+    background: #fff !important;
+    font: 9.5px/1.45 Arial, Helvetica, sans-serif !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .customer-print-sheet * { box-sizing: border-box; }
+  .customer-print-sheet[data-print-mode="statement"] { page: auto; }
+  .customer-print-sheet[data-print-mode="sale"] {
+    page: customer-receipt;
+    width: 76mm !important;
+    max-width: 76mm !important;
+    font-size: 6.8px !important;
+    line-height: 1.15 !important;
+  }
+
+  .print-brand-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 0 0 10px;
+    border-bottom: 3px solid #bd1e28;
+  }
+
+  .print-brand-lockup { display: flex; align-items: center; gap: 9px; min-width: 0; }
+  .print-brand-mark { display: grid; place-items: center; width: 38px; height: 38px; flex: 0 0 38px; border-radius: 7px; background: transparent; }
+  .print-brand-mark img { display: block; width: 38px; height: 38px; object-fit: contain; }
+  .print-brand-copy { display: grid; gap: 2px; }
+  .print-brand-copy strong { font-size: 13px; font-weight: 800; letter-spacing: .1px; }
+  .print-brand-copy small { color: #666; font-size: 8px; }
+  .print-brand-document { display: grid; justify-items: end; gap: 3px; text-align: right; }
+  .print-brand-document strong { color: #a81922; font-size: 9px; letter-spacing: .7px; }
+  .print-brand-document span { color: #6a6a6a; font-size: 8px; }
+
+  .print-document-title { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin: 15px 0 11px; }
+  .print-document-title > div:first-child { min-width: 0; }
+  .print-document-title small,
+  .print-receipt-heading small { color: #a81922; font-size: 8px; font-weight: 800; letter-spacing: 1px; }
+  .print-document-title h1 { margin: 3px 0 2px; font-size: 20px; line-height: 1.2; letter-spacing: -.3px; }
+  .print-document-title p { margin: 0; color: #626262; font-size: 9px; }
+  .print-period-badge { display: grid; gap: 3px; justify-items: end; min-width: 128px; padding: 8px 10px; border-left: 3px solid #bd1e28; background: #f5f5f5; }
+  .print-period-badge small { color: #6b6b6b; font-size: 7px; font-weight: 700; letter-spacing: .7px; }
+  .print-period-badge strong { font-size: 13px; white-space: nowrap; }
+
+  .print-customer-card { display: grid; grid-template-columns: 1.5fr 1fr 1fr .9fr; gap: 9px; margin: 0 0 11px; padding: 9px 10px; border: 1px solid #dedede; border-radius: 5px; background: #fafafa; }
+  .print-customer-card > div { display: grid; align-content: start; gap: 3px; min-width: 0; }
+  .print-customer-card small { color: #777; font-size: 7px; font-weight: 700; letter-spacing: .55px; }
+  .print-customer-card strong { overflow-wrap: anywhere; font-size: 9px; }
+  .print-customer-card span { color: #626262; font-size: 8px; }
+  .print-customer-primary strong { font-size: 11px; }
+
+  .print-summary-strip { display: grid; grid-template-columns: repeat(4, 1fr); margin: 0 0 11px; border: 1px solid #dedede; border-radius: 5px; overflow: hidden; }
+  .print-summary-strip > div { display: grid; gap: 3px; min-width: 0; padding: 8px 9px; border-right: 1px solid #e4e4e4; }
+  .print-summary-strip > div:last-child { border-right: 0; }
+  .print-summary-strip small { color: #6a6a6a; font-size: 7px; font-weight: 700; letter-spacing: .45px; }
+  .print-summary-strip strong { font-size: 10px; white-space: nowrap; }
+  .print-summary-balance { background: #171717; color: #fff; }
+  .print-summary-balance small { color: #d7d7d7; }
+  .print-summary-balance strong { color: #fff; font-size: 12px; }
+
+  .print-ledger-table,
+  .print-receipt-items { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .print-ledger-table thead { display: table-header-group; }
+  .print-ledger-table th { padding: 7px 6px; border-bottom: 2px solid #bd1e28; background: #191919; color: #fff; font-size: 7.5px; font-weight: 700; text-align: left; }
+  .print-ledger-table th:nth-child(1) { width: 14%; }
+  .print-ledger-table th:nth-child(2) { width: 42%; }
+  .print-ledger-table th:nth-child(3),
+  .print-ledger-table th:nth-child(4) { width: 14%; }
+  .print-ledger-table th:nth-child(5) { width: 16%; }
+  .print-ledger-table td { padding: 6px; border-bottom: 1px solid #e5e5e5; vertical-align: top; }
+  .print-ledger-row { break-inside: avoid; page-break-inside: avoid; }
+  .print-ledger-row:nth-child(even) { background: #fbfbfb; }
+  .print-ledger-row.is-payment .print-movement-label { color: #276443; }
+  .print-opening-row { background: #f2f2f2; }
+  .print-opening-row td { padding: 7px 6px; border-bottom: 1px solid #ccc; }
+  .print-opening-row small { display: block; color: #777; font-size: 7.5px; }
+  .print-date-cell { color: #4d4d4d; white-space: nowrap; }
+  .print-description-cell { overflow-wrap: anywhere; }
+  .print-movement-label { display: inline-block; margin-right: 5px; color: #a81922; font-size: 8.5px; }
+  .print-movement-note { display: block; margin-top: 2px; color: #5f5f5f; font-size: 7.5px; }
+  .print-inline-items { margin: 4px 0 0; padding-left: 12px; color: #444; font-size: 7.2px; }
+  .print-inline-items li { margin: 1px 0; }
+  .print-vat-hint { display: inline-block; margin-top: 3px; color: #a81922; font-size: 7px; font-weight: 700; }
+  .print-money-cell { text-align: right !important; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .print-balance-cell { font-weight: 700; }
+  .print-ledger-table tfoot th { padding: 7px 6px; border-top: 2px solid #171717; background: #f3f3f3; color: #171717; font-size: 8px; }
+  .print-no-movements { padding: 18px !important; color: #666; text-align: center; }
+
+  .print-vat-summary { width: 52%; max-width: 340px; margin: 10px 0 0 auto; padding: 8px 10px; border: 1px solid #dedede; border-top: 2px solid #bd1e28; border-radius: 4px; break-inside: avoid; page-break-inside: avoid; }
+  .print-vat-heading { display: flex; justify-content: space-between; margin-bottom: 5px; color: #a81922; font-size: 8px; font-weight: 800; letter-spacing: .55px; }
+  .print-vat-heading span { color: #171717; }
+  .print-vat-row { display: flex; justify-content: space-between; gap: 10px; padding: 2px 0; color: #4c4c4c; }
+  .print-vat-row strong { color: #171717; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .print-vat-gross { margin-top: 4px; padding-top: 5px; border-top: 1px solid #d7d7d7; font-weight: 800; }
+  .print-vat-gross span,
+  .print-vat-gross strong { color: #a81922; }
+  .print-statement-note { margin-top: 7px; color: #696969; font-size: 7px; }
+
+  .print-receipt-heading { margin: 10px 0 8px; text-align: center; }
+  .print-receipt-heading h1 { margin: 2px 0; font-size: 16px; line-height: 1.2; }
+  .print-receipt-heading p { margin: 0; color: #5d5d5d; font-size: 8px; }
+  .print-receipt-heading small { font-size: 7px; }
+  .print-customer-card.is-compact { grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; padding: 7px; }
+  .print-customer-card.is-compact .print-customer-primary { grid-column: 1 / -1; padding-bottom: 5px; border-bottom: 1px solid #e4e4e4; }
+  .print-customer-card.is-compact .print-customer-primary strong { font-size: 10px; }
+
+  .print-receipt-items th { padding: 5px 3px; border-top: 1px solid #333; border-bottom: 1px solid #333; color: #414141; font-size: 7px; text-align: left; }
+  .print-receipt-items th:nth-child(1) { width: 55%; }
+  .print-receipt-items th:nth-child(2) { width: 12%; text-align: center; }
+  .print-receipt-items th:nth-child(3) { width: 33%; }
+  .print-receipt-items td { padding: 5px 3px; border-bottom: 1px dashed #ccc; vertical-align: top; }
+  .print-receipt-items td:nth-child(2) { text-align: center; white-space: nowrap; }
+  .print-receipt-items td strong { display: block; overflow-wrap: anywhere; font-size: 8px; }
+  .print-receipt-items td small { display: block; margin-top: 2px; color: #666; font-size: 6.7px; }
+  .print-receipt-items td small span { white-space: nowrap; }
+  .customer-print-sheet[data-print-mode="sale"] .print-vat-summary { width: 100%; max-width: none; margin-top: 8px; padding: 7px; }
+  .customer-print-sheet[data-print-mode="sale"] .print-vat-heading { font-size: 7.5px; }
+  .print-vat-unavailable { margin-top: 8px; padding: 6px; border: 1px dashed #aaa; color: #666; font-size: 7px; }
+  .print-receipt-facts { display: grid; gap: 4px; margin-top: 8px; padding-top: 7px; border-top: 1px solid #bbb; }
+  .print-receipt-facts > div { display: flex; justify-content: space-between; gap: 8px; }
+  .print-receipt-facts span { color: #666; }
+  .print-receipt-facts strong { max-width: 58%; overflow-wrap: anywhere; text-align: right; }
+  .print-signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+  .print-signatures div { min-height: 32px; padding-top: 17px; border-top: 1px solid #999; color: #626262; font-size: 7px; text-align: center; }
+
+  .print-document-footer { display: flex; justify-content: space-between; gap: 12px; margin-top: 14px; padding-top: 7px; border-top: 1px solid #d9d9d9; color: #666; font-size: 7px; }
+  .print-document-footer strong { color: #8f2026; text-align: right; }
+  .print-receipt-footer { display: grid; gap: 4px; margin-top: 10px; text-align: center; }
+  .print-receipt-footer strong { text-align: center; }
+
+  .customer-print-sheet[data-print-mode="sale"] .print-brand-header { gap: 4px; padding-bottom: 3px; border-bottom-width: 2px; }
+  .customer-print-sheet[data-print-mode="sale"] .print-brand-lockup { gap: 4px; }
+  .customer-print-sheet[data-print-mode="sale"] .print-brand-mark { width: 23px; height: 23px; flex-basis: 23px; border-radius: 4px; }
+  .customer-print-sheet[data-print-mode="sale"] .print-brand-mark img { width: 19px; height: 19px; }
+  .customer-print-sheet[data-print-mode="sale"] .print-brand-copy { gap: 1px; }
+  .customer-print-sheet[data-print-mode="sale"] { font-size: 8px !important; line-height: 1.2 !important; }
+  .customer-print-sheet[data-print-mode="sale"] .print-brand-copy strong { font-size: 8.8px; }
+  .customer-print-sheet[data-print-mode="sale"] .print-brand-copy small,
+  .customer-print-sheet[data-print-mode="sale"] .print-receipt-heading small,
+  .customer-print-sheet[data-print-mode="sale"] .print-customer-card.is-compact > div:nth-child(2),
+  .customer-print-sheet[data-print-mode="sale"] .print-customer-card.is-compact > div:nth-child(3) { display: none; }
+  .customer-print-sheet[data-print-mode="sale"] .print-brand-document span { font-size: 5.8px; }
+  .customer-print-sheet[data-print-mode="sale"] .print-brand-document { gap: 1px; }
+  .customer-print-sheet[data-print-mode="sale"] .print-brand-document strong { font-size: 6.3px; letter-spacing: .3px; }
+  .customer-print-sheet[data-print-mode="sale"] .print-receipt-heading { margin: 3px 0 4px; }
+  .customer-print-sheet[data-print-mode="sale"] .print-receipt-heading h1 { font-size: 11.5px; }
+  .customer-print-sheet[data-print-mode="sale"] .print-receipt-heading p { font-size: 6.2px; }
+  .customer-print-sheet[data-print-mode="sale"] .print-customer-card.is-compact { gap: 3px 5px; margin-bottom: 4px; padding: 4px; }
+  .customer-print-sheet[data-print-mode="sale"] .print-customer-card small { font-size: 5.8px; }
+  .customer-print-sheet[data-print-mode="sale"] .print-customer-card strong { font-size: 7px; }
+  .customer-print-sheet[data-print-mode="sale"] .print-customer-card span { font-size: 6px; }
+  .customer-print-sheet[data-print-mode="sale"] .print-customer-card.is-compact .print-customer-primary { padding-bottom: 3px; }
+  .customer-print-sheet[data-print-mode="sale"] .print-customer-card.is-compact .print-customer-primary strong { font-size: 8.2px; }
+  .customer-print-sheet[data-print-mode="sale"] .print-receipt-items th { padding: 3px 2px; font-size: 6.1px; }
+  .customer-print-sheet[data-print-mode="sale"] .print-receipt-items td { padding: 3px 2px; }
+  .customer-print-sheet[data-print-mode="sale"] .print-receipt-items td strong { font-size: 7.2px; }
+  .customer-print-sheet[data-print-mode="sale"] .print-receipt-items td small { margin-top: 1px; font-size: 6.2px; }
+  .customer-print-sheet[data-print-mode="sale"] .print-vat-summary { margin-top: 4px; padding: 4px; }
+  .customer-print-sheet[data-print-mode="sale"] .print-vat-heading { margin-bottom: 2px; font-size: 5.8px; }
+  .customer-print-sheet[data-print-mode="sale"] .print-vat-row { gap: 4px; padding: 1px 0; font-size: 7px; }
+  .customer-print-sheet[data-print-mode="sale"] .print-vat-gross { margin-top: 2px; padding-top: 2px; }
+  .customer-print-sheet[data-print-mode="sale"] .print-receipt-facts { gap: 2px; margin-top: 4px; padding-top: 3px; font-size: 7px; }
+  .customer-print-sheet[data-print-mode="sale"] .print-receipt-facts strong { max-width: 62%; }
+  .customer-print-sheet[data-print-mode="sale"] .print-signatures { display: none; }
+  .customer-print-sheet[data-print-mode="sale"] .print-receipt-footer { gap: 2px; margin-top: 4px; font-size: 5.8px; line-height: 1.1; }
+}

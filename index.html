@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#141414" />
+    <meta name="description" content="Çalışkanlar Yapı Market için paylaşımlı müşteri cari hesapları, tahsilatlar ve vadeler." />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Çalışkanlar Yapı Market — Cari Hesap Yönetimi</title>
+    <script>
+      try {
+        const savedTheme = localStorage.getItem('cari-usta-theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.dataset.theme = savedTheme === 'dark' || (savedTheme !== 'light' && prefersDark) ? 'dark' : 'light';
+      } catch {
+        document.documentElement.dataset.theme = 'light';
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
